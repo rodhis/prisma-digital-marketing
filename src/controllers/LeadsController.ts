@@ -1,6 +1,6 @@
 import type { Handler } from 'express'
 import prisma from '../database/index.js'
-import { CreateLeadRequestSchema } from './schemas/LeadsRequestSchema.js'
+import { CreateLeadRequestSchema, UpdateLeadRequestSchema } from './schemas/LeadsRequestSchemas.js'
 import { HttpError } from '../errors/HttpError.js'
 
 export class LeadsController {
@@ -43,6 +43,36 @@ export class LeadsController {
                 throw new HttpError(404, 'Lead not found')
             }
             res.json(lead)
+        } catch (error) {
+            next(error)
+        }
+    }
+    update: Handler = async (req, res, next) => {
+        try {
+            const body = UpdateLeadRequestSchema.parse(req.body)
+
+            const leadData = {
+                ...(body.name !== undefined && { name: body.name }),
+                ...(body.email !== undefined && { email: body.email }),
+                ...(body.phone !== undefined && { phone: body.phone }),
+                ...(body.status !== undefined && { status: body.status }),
+            }
+
+            const updatedLead = await prisma.lead.update({
+                where: { id: Number(req.params.id) },
+                data: leadData,
+            })
+            res.json(updatedLead)
+        } catch (error) {
+            next(error)
+        }
+    }
+    delete: Handler = async (req, res, next) => {
+        try {
+            await prisma.lead.delete({
+                where: { id: Number(req.params.id) },
+            })
+            res.status(204).send()
         } catch (error) {
             next(error)
         }
