@@ -7,7 +7,7 @@ const router = Router()
 const leadsController = new LeadsController()
 
 router.get('/leads', leadsController.index)
-
+router.post('/leads', leadsController.create)
 
 // status route
 router.get('/status', (req, res) => {
