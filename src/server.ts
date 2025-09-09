@@ -1,5 +1,6 @@
 import cors from 'cors'
 import express from 'express'
+
 import { router } from './router.js'
 import { errorHandlerMiddleware } from './errors/middlewares/error-handler.js'
 

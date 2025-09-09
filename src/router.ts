@@ -1,4 +1,5 @@
 import { Router } from 'express'
+
 import { LeadsController } from './controllers/LeadsController.js'
 
 const router = Router()

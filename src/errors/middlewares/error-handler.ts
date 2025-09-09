@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from 'express'
+
 import { HttpError } from '../HttpError.js'
 
 export const errorHandlerMiddleware: ErrorRequestHandler = (error, req, res, next) => {
