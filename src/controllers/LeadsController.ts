@@ -1,13 +1,13 @@
 import type { Handler } from 'express'
 import type { Prisma } from '@prisma/client'
 
-import prisma from '../database/index.js'
 import {
     CreateLeadRequestSchema,
     GetLeadsRequestSchema,
     UpdateLeadRequestSchema,
 } from './schemas/LeadsRequestSchemas.js'
 import { HttpError } from '../errors/HttpError.js'
+import { LeadModel } from '../models/LeadModel.js'
 
 export class LeadsController {
     index: Handler = async (req, res, next) => {
@@ -20,16 +20,16 @@ export class LeadsController {
             if (name) where.name = { contains: name, mode: 'insensitive' }
             if (status) where.status = status
 
-            const leads = await prisma.lead.findMany({
+            const leads = await LeadModel.findMany(
                 where,
-                orderBy: {
+                {
                     [sortBy]: order,
                 },
-                skip: (+page - 1) * +pageSize,
-                take: +pageSize,
-            })
+                (+page - 1) * +pageSize,
+                +pageSize
+            )
 
-            const totalLeads = await prisma.lead.count({ where })
+            const totalLeads = await LeadModel.count(where)
             const totalPages = Math.ceil(totalLeads / +pageSize)
             res.json({
                 data: leads,
@@ -49,9 +49,7 @@ export class LeadsController {
                 phone: body.phone ?? null,
                 ...(body.status !== undefined && { status: body.status }),
             }
-            const newLead = await prisma.lead.create({
-                data: leadData,
-            })
+            const newLead = await LeadModel.create(leadData)
             res.status(201).json(newLead)
         } catch (error) {
             next(error)
@@ -59,13 +57,13 @@ export class LeadsController {
     }
     show: Handler = async (req, res, next) => {
         try {
-            const lead = await prisma.lead.findUnique({
-                where: { id: Number(req.params.id) },
-                include: {
+            const lead = await LeadModel.findUnique(
+                { id: Number(req.params.id) },
+                {
                     groups: true,
                     campaigns: true,
-                },
-            })
+                }
+            )
             if (!lead) {
                 throw new HttpError(404, 'Lead not found')
             }
@@ -78,9 +76,7 @@ export class LeadsController {
         try {
             const body = UpdateLeadRequestSchema.parse(req.body)
             const id = Number(req.params.id)
-            const existingLead = await prisma.lead.findUnique({
-                where: { id },
-            })
+            const existingLead = await LeadModel.findUnique({ id })
             if (!existingLead) {
                 throw new HttpError(404, 'Lead not found')
             }
@@ -91,10 +87,7 @@ export class LeadsController {
                 ...(body.status !== undefined && { status: body.status }),
             }
 
-            const updatedLead = await prisma.lead.update({
-                where: { id },
-                data: leadData,
-            })
+            const updatedLead = await LeadModel.update({ id }, leadData)
             res.json(updatedLead)
         } catch (error) {
             next(error)
@@ -103,15 +96,11 @@ export class LeadsController {
     delete: Handler = async (req, res, next) => {
         try {
             const id = Number(req.params.id)
-            const existingLead = await prisma.lead.findUnique({
-                where: { id },
-            })
+            const existingLead = await LeadModel.findUnique({ id })
             if (!existingLead) {
                 throw new HttpError(404, 'Lead not found')
             }
-            const deletedLead = await prisma.lead.delete({
-                where: { id },
-            })
+            const deletedLead = await LeadModel.delete({ id })
             res.json({ deletedLead })
         } catch (error) {
             next(error)
