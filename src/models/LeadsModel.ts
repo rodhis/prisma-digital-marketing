@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import prisma from '../database/index.js'
 
-export class LeadModel {
+export class LeadsModel {
     static async findMany(
         where: Prisma.LeadWhereInput,
         orderBy: Prisma.LeadOrderByWithRelationInput,

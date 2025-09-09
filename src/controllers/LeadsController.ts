@@ -7,7 +7,7 @@ import {
     UpdateLeadRequestSchema,
 } from './schemas/LeadsRequestSchemas.js'
 import { HttpError } from '../errors/HttpError.js'
-import { LeadModel } from '../models/LeadModel.js'
+import { LeadsModel } from '../models/LeadsModel.js'
 
 export class LeadsController {
     index: Handler = async (req, res, next) => {
@@ -20,7 +20,7 @@ export class LeadsController {
             if (name) where.name = { contains: name, mode: 'insensitive' }
             if (status) where.status = status
 
-            const leads = await LeadModel.findMany(
+            const leads = await LeadsModel.findMany(
                 where,
                 {
                     [sortBy]: order,
@@ -29,7 +29,7 @@ export class LeadsController {
                 +pageSize
             )
 
-            const totalLeads = await LeadModel.count(where)
+            const totalLeads = await LeadsModel.count(where)
             const totalPages = Math.ceil(totalLeads / +pageSize)
             res.json({
                 data: leads,
@@ -49,7 +49,7 @@ export class LeadsController {
                 phone: body.phone ?? null,
                 ...(body.status !== undefined && { status: body.status }),
             }
-            const newLead = await LeadModel.create(leadData)
+            const newLead = await LeadsModel.create(leadData)
             res.status(201).json(newLead)
         } catch (error) {
             next(error)
@@ -57,7 +57,7 @@ export class LeadsController {
     }
     show: Handler = async (req, res, next) => {
         try {
-            const lead = await LeadModel.findUnique(
+            const lead = await LeadsModel.findUnique(
                 { id: Number(req.params.id) },
                 {
                     groups: true,
@@ -76,7 +76,7 @@ export class LeadsController {
         try {
             const body = UpdateLeadRequestSchema.parse(req.body)
             const id = Number(req.params.id)
-            const existingLead = await LeadModel.findUnique({ id })
+            const existingLead = await LeadsModel.findUnique({ id })
             if (!existingLead) {
                 throw new HttpError(404, 'Lead not found')
             }
@@ -87,7 +87,7 @@ export class LeadsController {
                 ...(body.status !== undefined && { status: body.status }),
             }
 
-            const updatedLead = await LeadModel.update({ id }, leadData)
+            const updatedLead = await LeadsModel.update({ id }, leadData)
             res.json(updatedLead)
         } catch (error) {
             next(error)
@@ -96,11 +96,11 @@ export class LeadsController {
     delete: Handler = async (req, res, next) => {
         try {
             const id = Number(req.params.id)
-            const existingLead = await LeadModel.findUnique({ id })
+            const existingLead = await LeadsModel.findUnique({ id })
             if (!existingLead) {
                 throw new HttpError(404, 'Lead not found')
             }
-            const deletedLead = await LeadModel.delete({ id })
+            const deletedLead = await LeadsModel.delete({ id })
             res.json({ deletedLead })
         } catch (error) {
             next(error)
