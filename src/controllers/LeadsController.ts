@@ -13,7 +13,7 @@ export class LeadsController {
     index: Handler = async (req, res, next) => {
         try {
             const query = GetLeadsRequestSchema.parse(req.query)
-            const { page = '1', pageSize = '10', name, status, sortBy = 'name', order = 'asc' } = query
+            const { page = '1', pageSize = '10', name, status, sortBy = 'id', order = 'asc' } = query
 
             const where: Prisma.LeadWhereInput = {}
 
