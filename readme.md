@@ -54,14 +54,3 @@ Este projeto oferece uma base robusta para construir aplicações voltadas ao ma
 -   [Documentação do Prisma](https://www.prisma.io/docs/)
 -   [Documentação do Express](https://expressjs.com/pt/)
 
-## 💡 Contribuição
-
-Sinta-se à vontade para abrir issues e enviar pull requests!
-
-## 📝 Licença
-
-Este projeto está sob a licença MIT.
-
----
-
-Desenvolvido com ❤️ para negócios digitais.
