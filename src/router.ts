@@ -2,12 +2,13 @@ import { Router } from 'express'
 
 import { LeadsController } from './controllers/LeadsController.js'
 import { GroupsController } from './controllers/GroupsController.js'
+import { CampaignsController } from './controllers/CampaignsController.js'
 
 const router = Router()
 
-
 const leadsController = new LeadsController()
 const groupsController = new GroupsController()
+const campaignsController = new CampaignsController()
 
 // leads routes
 router.get('/leads', leadsController.index)
@@ -22,6 +23,11 @@ router.post('/groups', groupsController.create)
 router.get('/groups/:id', groupsController.show)
 router.put('/groups/:id', groupsController.update)
 router.delete('/groups/:id', groupsController.delete)
+
+// campaigns routes
+router.get('/campaigns', campaignsController.index)
+router.post('/campaigns', campaignsController.create)
+router.get('/campaigns/:id', campaignsController.show)
 
 // status route
 router.get('/status', (req, res) => {
