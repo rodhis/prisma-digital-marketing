@@ -1,10 +1,11 @@
 import type { Handler } from 'express'
+
 import {
     CreateCampaignRequestSchema,
     UpdateCampaignRequestSchema,
 } from './schemas/CampaignsRequestSchemas.js'
 import prisma from '../database/index.js'
-import { de } from 'zod/locales'
+import { HttpError } from '../errors/HttpError.js'
 
 export class CampaignsController {
     index: Handler = async (req, res, next) => {
@@ -51,7 +52,7 @@ export class CampaignsController {
                 },
             })
             if (!campaign) {
-                return res.status(404).json({ message: 'Campaign not found' })
+                throw new HttpError(404, 'Campaign not found')
             }
             res.json(campaign)
         } catch (error) {
@@ -65,9 +66,7 @@ export class CampaignsController {
             const existingCampaign = await prisma.campaign.findUnique({
                 where: { id },
             })
-            if (!existingCampaign) {
-                return res.status(404).json({ message: 'Campaign not found' })
-            }
+            if (!existingCampaign) throw new HttpError(404, 'Campaign not found')
             const campaignData = {
                 ...(body.name !== undefined && { name: body.name }),
                 ...(body.description !== undefined && { description: body.description }),
@@ -90,9 +89,7 @@ export class CampaignsController {
             const existingCampaign = await prisma.campaign.findUnique({
                 where: { id },
             })
-            if (!existingCampaign) {
-                return res.status(404).json({ message: 'Campaign not found' })
-            }
+            if (!existingCampaign) throw new HttpError(404, 'Campaign not found')
             const deletedCampaign = await prisma.campaign.delete({
                 where: { id },
             })
