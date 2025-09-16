@@ -1,4 +1,5 @@
 import type { Handler } from 'express'
+
 import prisma from '../database/index.js'
 import { CreateGroupRequestSchema, UpdateGroupRequestSchema } from './schemas/GroupsRequestsSchemas.js'
 import { HttpError } from '../errors/HttpError.js'
