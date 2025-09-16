@@ -3,12 +3,14 @@ import { Router } from 'express'
 import { LeadsController } from './controllers/LeadsController.js'
 import { GroupsController } from './controllers/GroupsController.js'
 import { CampaignsController } from './controllers/CampaignsController.js'
+import { CampaignLeadsController } from './controllers/CampaignLeadsController.js'
 
 const router = Router()
 
 const leadsController = new LeadsController()
 const groupsController = new GroupsController()
 const campaignsController = new CampaignsController()
+const campaignLeadsController = new CampaignLeadsController()
 
 // leads routes
 router.get('/leads', leadsController.index)
@@ -30,6 +32,12 @@ router.post('/campaigns', campaignsController.create)
 router.get('/campaigns/:id', campaignsController.show)
 router.put('/campaigns/:id', campaignsController.update)
 router.delete('/campaigns/:id', campaignsController.delete)
+
+// campaignleads routes
+router.get('/campaigns/:campaignId/leads/', campaignLeadsController.getLeads)
+router.post('/campaigns/:campaignId/leads/', campaignLeadsController.addLead)
+router.put('/campaigns/:campaignId/leads/:leadId', campaignLeadsController.updateLeadStatus)
+router.delete('/campaigns/:campaignId/leads/:leadId', campaignLeadsController.removeLead)
 
 // status route
 router.get('/status', (req, res) => {
