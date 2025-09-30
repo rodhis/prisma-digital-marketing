@@ -33,7 +33,7 @@ export class GroupsController {
             if (!group) {
                 throw new HttpError(404, 'Group not found')
             }
-            res.status(201).json(group)
+            res.status(200).json(group)
         } catch (error) {
             next(error)
         }
