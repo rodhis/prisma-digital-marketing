@@ -20,7 +20,7 @@ export interface LeadWhereParams {
 
 export interface FindLeadsParams {
     where?: LeadWhereParams
-    sortBy?: 'name' | 'status' | 'createdAt'
+    sortBy?: 'name' | 'status' | 'createdAt' | 'id'
     order?: 'asc' | 'desc'
     limit?: number
     offset?: number
