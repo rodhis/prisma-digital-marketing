@@ -108,6 +108,9 @@ export class LeadsController {
             }
 
             const updatedLead = await this.leadsRepository.updateById(id, leadData)
+            if (!updatedLead) {
+                throw new HttpError(404, 'Lead not found')
+            }
             res.json(updatedLead)
         } catch (error) {
             next(error)
@@ -121,6 +124,9 @@ export class LeadsController {
                 throw new HttpError(404, 'Lead not found')
             }
             const deletedLead = await this.leadsRepository.deleteById(id)
+            if (!deletedLead) {
+                throw new HttpError(404, 'Lead not found')
+            }
             res.json({ deletedLead })
         } catch (error) {
             next(error)
