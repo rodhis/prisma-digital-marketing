@@ -1,39 +1,46 @@
 import type { Handler } from 'express'
-import type { Prisma } from '@prisma/client'
-
-import prisma from '../database/index.js'
 import {
     CreateLeadRequestSchema,
     GetLeadsRequestSchema,
     UpdateLeadRequestSchema,
 } from './schemas/LeadsRequestSchemas.js'
 import { HttpError } from '../errors/HttpError.js'
+import type { LeadsRepository, LeadWhereParams } from '../repositories/LeadsRepository.js'
 
 export class LeadsController {
+    private leadsRepository: LeadsRepository
+
+    constructor(leadsRepository: LeadsRepository) {
+        this.leadsRepository = leadsRepository
+    }
+
     index: Handler = async (req, res, next) => {
         try {
             const query = GetLeadsRequestSchema.parse(req.query)
             const { page = '1', pageSize = '10', name, status, sortBy = 'id', order = 'asc' } = query
 
-            const where: Prisma.LeadWhereInput = {}
+            const limit = Number(pageSize)
+            const offset = (Number(page) - 1) * limit
 
-            if (name) where.name = { contains: name, mode: 'insensitive' }
+            const where: LeadWhereParams = {}
+
+            if (name) where.name = { like: name, mode: 'insensitive' }
             if (status) where.status = status
 
-            const leads = await prisma.lead.findMany({
+            const leads = await this.leadsRepository.find({
                 where,
-                orderBy: {
-                    [sortBy]: order,
-                },
-                skip: (+page - 1) * +pageSize,
-                take: +pageSize,
+                sortBy,
+                order,
+                limit,
+                offset,
             })
 
-            const totalLeads = await prisma.lead.count({ where })
-            const totalPages = Math.ceil(totalLeads / +pageSize)
+            const total = await this.leadsRepository.count(where)
+            const totalPages = Math.ceil(total / limit)
+
             res.json({
                 data: leads,
-                meta: { totalLeads, page: +page, pageSize: +pageSize, totalPages },
+                meta: { page: +page, pageSize: +pageSize, total, totalPages },
             })
         } catch (error) {
             next(error)
@@ -43,15 +50,14 @@ export class LeadsController {
     create: Handler = async (req, res, next) => {
         try {
             const body = CreateLeadRequestSchema.parse(req.body)
+            if (!body.status) body.status = 'NEW'
             const leadData = {
                 name: body.name,
                 email: body.email,
-                phone: body.phone ?? null,
+                ...(body.phone !== undefined && { phone: body.phone }),
                 ...(body.status !== undefined && { status: body.status }),
             }
-            const newLead = await prisma.lead.create({
-                data: leadData,
-            })
+            const newLead = await this.leadsRepository.create(leadData)
             res.status(201).json(newLead)
         } catch (error) {
             next(error)
@@ -59,13 +65,7 @@ export class LeadsController {
     }
     show: Handler = async (req, res, next) => {
         try {
-            const lead = await prisma.lead.findUnique({
-                where: { id: Number(req.params.id) },
-                include: {
-                    groups: true,
-                    campaigns: true,
-                },
-            })
+            const lead = await this.leadsRepository.findById(Number(req.params.id))
             if (!lead) {
                 throw new HttpError(404, 'Lead not found')
             }
@@ -78,25 +78,27 @@ export class LeadsController {
         try {
             const body = UpdateLeadRequestSchema.parse(req.body)
             const id = Number(req.params.id)
-            const existingLead = await prisma.lead.findUnique({
-                where: { id },
-            })
+            const existingLead = await this.leadsRepository.findById(id)
+
             if (!existingLead) {
                 throw new HttpError(404, 'Lead not found')
             }
 
             if (existingLead.status === 'NEW' && body.status !== undefined && body.status !== 'CONTACTED') {
-                throw new HttpError(400, "A new lead must be contacted before changing its status to other value")
+                throw new HttpError(
+                    400,
+                    'A new lead must be contacted before changing its status to other value'
+                )
             }
 
-            if (body.status  && body.status === 'ARCHIVED') {
+            if (body.status && body.status === 'ARCHIVED') {
                 const now = new Date()
                 const diffTime = Math.abs(now.getTime() - existingLead.updatedAt.getTime())
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) //converted to  seconds, then minutes, then hours and finally days
                 if (diffDays < 180) {
-                    throw new HttpError(400, "A lead can only be archived after 6 months of its last update")
+                    throw new HttpError(400, 'A lead can only be archived after 6 months of its last update')
                 }
-            }   
+            }
 
             const leadData = {
                 ...(body.name !== undefined && { name: body.name }),
@@ -105,10 +107,7 @@ export class LeadsController {
                 ...(body.status !== undefined && { status: body.status }),
             }
 
-            const updatedLead = await prisma.lead.update({
-                where: { id },
-                data: leadData,
-            })
+            const updatedLead = await this.leadsRepository.updateById(id, leadData)
             res.json(updatedLead)
         } catch (error) {
             next(error)
@@ -117,15 +116,11 @@ export class LeadsController {
     delete: Handler = async (req, res, next) => {
         try {
             const id = Number(req.params.id)
-            const existingLead = await prisma.lead.findUnique({
-                where: { id },
-            })
+            const existingLead = await this.leadsRepository.findById(id)
             if (!existingLead) {
                 throw new HttpError(404, 'Lead not found')
             }
-            const deletedLead = await prisma.lead.delete({
-                where: { id },
-            })
+            const deletedLead = await this.leadsRepository.deleteById(id)
             res.json({ deletedLead })
         } catch (error) {
             next(error)
