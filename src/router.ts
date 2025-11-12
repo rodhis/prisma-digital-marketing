@@ -5,10 +5,15 @@ import { GroupsController } from './controllers/GroupsController.js'
 import { CampaignsController } from './controllers/CampaignsController.js'
 import { CampaignLeadsController } from './controllers/CampaignLeadsController.js'
 import { GroupLeadsController } from './controllers/GroupLeadsController.js'
+import { PrismaLeadsRepository } from './repositories/prisma/PrismaLeadsRepository.js'
 
 const router = Router()
 
-const leadsController = new LeadsController()
+//repositories
+const leadsRepository = new PrismaLeadsRepository
+
+// controllers instances
+const leadsController = new LeadsController(leadsRepository)
 const groupsController = new GroupsController()
 const campaignsController = new CampaignsController()
 const campaignLeadsController = new CampaignLeadsController()
