@@ -1,23 +1,13 @@
 import { Router } from 'express'
-
-import { LeadsController } from './controllers/LeadsController.js'
-import { GroupsController } from './controllers/GroupsController.js'
-import { CampaignsController } from './controllers/CampaignsController.js'
-import { CampaignLeadsController } from './controllers/CampaignLeadsController.js'
-import { GroupLeadsController } from './controllers/GroupLeadsController.js'
-import { PrismaLeadsRepository } from './repositories/prisma/PrismaLeadsRepository.js'
+import {
+    campaignLeadsController,
+    campaignsController,
+    groupsController,
+    groupsLeadsController,
+    leadsController,
+} from './instancesContainer.js'
 
 const router = Router()
-
-//repositories
-const leadsRepository = new PrismaLeadsRepository
-
-// controllers instances
-const leadsController = new LeadsController(leadsRepository)
-const groupsController = new GroupsController()
-const campaignsController = new CampaignsController()
-const campaignLeadsController = new CampaignLeadsController()
-const groupsLeadsController = new GroupLeadsController()
 
 // leads routes
 router.get('/leads', leadsController.index)
