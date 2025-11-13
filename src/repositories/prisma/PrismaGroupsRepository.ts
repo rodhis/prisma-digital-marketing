@@ -20,4 +20,30 @@ export class PrismaGroupsRepository implements GroupsRepository {
     deleteById(id: number): Promise<GroupModel | null> {
         return prisma.group.delete({ where: { id } })
     }
+    addLead(groupId: number, leadId: number): Promise<GroupModel> {
+        return prisma.group.update({
+            where: {
+                id: groupId,
+            },
+            data: {
+                leads: {
+                    connect: {
+                        id: leadId,
+                    },
+                },
+            },
+            include: { leads: true },
+        })
+    }
+    removeLead(groupId: number, leadId: number): Promise<GroupModel> {
+        return prisma.group.update({
+                where: { id: groupId },
+                data: {
+                    leads: {
+                        disconnect: { id: leadId },
+                    },
+                },
+                include: { leads: true },
+            })
+    }
 }
