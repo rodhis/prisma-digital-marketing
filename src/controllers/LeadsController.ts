@@ -50,14 +50,12 @@ export class LeadsController {
     create: Handler = async (req, res, next) => {
         try {
             const body = CreateLeadRequestSchema.parse(req.body)
-            if (!body.status) body.status = 'NEW'
-            const leadData = {
+            const newLead = await this.leadsRepository.create({
                 name: body.name,
                 email: body.email,
                 ...(body.phone !== undefined && { phone: body.phone }),
-                ...(body.status !== undefined && { status: body.status }),
-            }
-            const newLead = await this.leadsRepository.create(leadData)
+                status: body.status ?? 'NEW',
+            })
             res.status(201).json(newLead)
         } catch (error) {
             next(error)
