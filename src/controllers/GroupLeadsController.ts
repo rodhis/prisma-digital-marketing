@@ -35,7 +35,7 @@ export class GroupLeadsController {
                 order,
                 limit,
                 offset,
-                include: { groups: true },
+                include: { groups: true, campaigns: true },
             })
 
             const totalLeads = await this.leadsRepository.count(where)

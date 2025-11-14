@@ -16,7 +16,7 @@ export interface LeadWhereParams {
         mode?: 'default' | 'insensitive'
     }
     status?: LeadStatus
-    groupId?: Number
+    groupId?: number
 }
 
 export interface FindLeadsParams {
