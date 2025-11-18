@@ -1,5 +1,11 @@
 import prisma from '../../database/index.js'
-import type { CampaignModel, CampaignsRepository, CreateCampaignAttributes } from '../CampaignsRepository.js'
+import type {
+    AddLeadToCampaignAttributes,
+    CampaignModel,
+    CampaignsRepository,
+    CreateCampaignAttributes,
+    LeadCampaignAssociation,
+} from '../CampaignsRepository.js'
 
 export class PrismaCampaignsRepository implements CampaignsRepository {
     find(): Promise<CampaignModel[]> {
@@ -37,5 +43,46 @@ export class PrismaCampaignsRepository implements CampaignsRepository {
         if (!campaignExists) return null
 
         return prisma.campaign.delete({ where: { id } })
+    }
+
+    async findLeadCampaignAssociation(
+        campaignId: number,
+        leadId: number
+    ): Promise<LeadCampaignAssociation | null> {
+        return prisma.leadCampaign.findUnique({
+            where: {
+                leadId_campaignId: {
+                    leadId,
+                    campaignId,
+                },
+            },
+        })
+    }
+
+    async addLead(attributes: AddLeadToCampaignAttributes): Promise<void> {
+        await prisma.leadCampaign.create({ data: attributes })
+    }
+
+    async updateLeadStatus(attributes: AddLeadToCampaignAttributes): Promise<LeadCampaignAssociation> {
+        return prisma.leadCampaign.update({
+            data: { status: attributes.status },
+            where: {
+                leadId_campaignId: {
+                    leadId: attributes.leadId,
+                    campaignId: attributes.campaignId,
+                },
+            },
+        })
+    }
+
+    async removeLead(campaignId: number, leadId: number): Promise<LeadCampaignAssociation> {
+        return prisma.leadCampaign.delete({
+            where: {
+                leadId_campaignId: {
+                    leadId,
+                    campaignId,
+                },
+            },
+        })
     }
 }
