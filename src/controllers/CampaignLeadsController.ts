@@ -1,15 +1,13 @@
 import type { Handler } from 'express'
-import type { Prisma } from '@prisma/client'
 
 import {
     AddLeadToCampaignRequestSchema,
     GetCampaignLeadsRequestSchema,
     UpdateLeadStatusInCampaignRequestSchema,
 } from './schemas/CampaignsRequestSchemas.js'
-import prisma from '../database/index.js'
 import { HttpError } from '../errors/HttpError.js'
 import type { CampaignsRepository } from '../repositories/CampaignsRepository.js'
-import type { LeadsRepository } from '../repositories/LeadsRepository.js'
+import type { LeadsRepository, LeadWhereParams } from '../repositories/LeadsRepository.js'
 
 export class CampaignLeadsController {
     constructor(
@@ -20,47 +18,40 @@ export class CampaignLeadsController {
         try {
             const campaignId = Number(req.params.campaignId)
             const query = GetCampaignLeadsRequestSchema.parse(req.query)
-            const { page = '1', pageSize = '10', name, status, sortBy = 'name', order = 'asc' } = query
+            const {
+                page = '1',
+                pageSize = '10',
+                name,
+                status = 'NEW',
+                sortBy = 'name',
+                order = 'asc',
+            } = query
 
-            const pageNumber = +page
-            const pageSizeNumber = +pageSize
+            const limit = +pageSize
+            const offset = (+page - 1) * limit
 
-            const where: Prisma.LeadWhereInput = {
-                campaigns: {
-                    some: { campaignId },
-                },
-            }
+            const where: LeadWhereParams = { campaignId, campaignStatus: status }
 
-            if (name) where.name = { contains: name, mode: 'insensitive' }
-            if (status) where.campaigns = { some: { status } }
+            if (name) where.name = { like: name, mode: 'insensitive' }
 
-            const leads = await prisma.lead.findMany({
+            const leads = await this.leadsRepository.find({
                 where,
-                orderBy: {
-                    [sortBy]: order,
-                },
-                skip: (pageNumber - 1) * pageSizeNumber,
-                take: pageSizeNumber,
-                include: {
-                    campaigns: {
-                        select: {
-                            campaignId: true,
-                            leadId: true,
-                            status: true,
-                        },
-                    },
-                },
+                sortBy,
+                order,
+                limit,
+                offset,
+                include: { groups: true, campaigns: true },
             })
 
-            const totalLeads = await prisma.lead.count({ where })
+            const total = await this.leadsRepository.count(where)
 
             res.json({
                 data: leads,
                 meta: {
-                    page: pageNumber,
-                    pageSize: pageSizeNumber,
-                    totalLeads,
-                    totalPages: Math.ceil(totalLeads / pageSizeNumber),
+                    page: +page,
+                    pageSize: limit,
+                    total,
+                    totalPages: Math.ceil(total / limit),
                 },
             })
         } catch (error) {
@@ -83,14 +74,10 @@ export class CampaignLeadsController {
                 throw new HttpError(404, `Lead with id ${leadId} not found`)
             }
 
-            const existingAssociation = await prisma.leadCampaign.findUnique({
-                where: {
-                    leadId_campaignId: {
-                        leadId: leadId,
-                        campaignId: campaignId,
-                    },
-                },
-            })
+            const existingAssociation = await this.campaignsRepository.findLeadCampaignAssociation(
+                campaignId,
+                leadId
+            )
 
             if (existingAssociation) {
                 throw new HttpError(409, 'Lead is already associated with this campaign')

@@ -35,6 +35,15 @@ export class PrismaLeadsRepository implements LeadsRepository {
             }
         }
 
+        if (params.where?.campaignId !== undefined) {
+            whereClause.campaigns = {
+                some: {
+                    campaignId: Number(params.where.campaignId),
+                    ...(params.where.campaignStatus && { status: params.where.campaignStatus }),
+                },
+            }
+        }
+
         const queryOptions: Prisma.LeadFindManyArgs = {
             where: whereClause,
             orderBy: params.sortBy ? { [params.sortBy]: params.order } : { name: 'asc' },
@@ -94,6 +103,15 @@ export class PrismaLeadsRepository implements LeadsRepository {
             whereClause.groups = {
                 some: {
                     id: Number(where.groupId),
+                },
+            }
+        }
+
+        if (where?.campaignId !== undefined) {
+            whereClause.campaigns = {
+                some: {
+                    campaignId: Number(where.campaignId),
+                    ...(where.campaignStatus && { status: where.campaignStatus }),
                 },
             }
         }

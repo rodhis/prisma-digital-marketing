@@ -1,4 +1,4 @@
-import type { Lead } from '@prisma/client'
+import type { LeadCampaignStatus } from './CampaignsRepository.js'
 
 export type LeadStatus =
     | 'NEW'
@@ -9,6 +9,16 @@ export type LeadStatus =
     | 'DISQUALIFIED'
     | 'ARCHIVED'
 
+export interface LeadModel {
+    id: number
+    name: string
+    email: string
+    phone: string | null
+    status: LeadStatus
+    createdAt: Date
+    updatedAt: Date
+}
+
 export interface LeadWhereParams {
     name?: {
         like?: string
@@ -16,7 +26,9 @@ export interface LeadWhereParams {
         mode?: 'default' | 'insensitive'
     }
     status?: LeadStatus
+    campaignStatus?: LeadCampaignStatus
     groupId?: number
+    campaignId?: number
 }
 
 export interface FindLeadsParams {
@@ -39,10 +51,10 @@ export interface CreateLeadAttributes {
 }
 
 export interface LeadsRepository {
-    find: (params: FindLeadsParams) => Promise<Lead[]>
-    findById: (id: number) => Promise<Lead | null>
+    find: (params: FindLeadsParams) => Promise<LeadModel[]>
+    findById: (id: number) => Promise<LeadModel | null>
     count: (where: LeadWhereParams) => Promise<number>
-    create: (attributes: CreateLeadAttributes) => Promise<Lead>
-    updateById: (id: number, attributes: Partial<CreateLeadAttributes>) => Promise<Lead | null>
-    deleteById: (id: number) => Promise<Lead | null>
+    create: (attributes: CreateLeadAttributes) => Promise<LeadModel>
+    updateById: (id: number, attributes: Partial<CreateLeadAttributes>) => Promise<LeadModel | null>
+    deleteById: (id: number) => Promise<LeadModel | null>
 }
