@@ -5,43 +5,27 @@ import {
     UpdateLeadRequestSchema,
 } from './schemas/LeadsRequestSchemas.js'
 import { HttpError } from '../errors/HttpError.js'
-import type { LeadsRepository, LeadWhereParams } from '../repositories/LeadsRepository.js'
+import type { LeadsService } from '../services/LeadsService.js'
 
 export class LeadsController {
-    private leadsRepository: LeadsRepository
-
-    constructor(leadsRepository: LeadsRepository) {
-        this.leadsRepository = leadsRepository
-    }
+    constructor(private readonly leadsService: LeadsService) {}
 
     index: Handler = async (req, res, next) => {
         try {
             const query = GetLeadsRequestSchema.parse(req.query)
-            const { page = '1', pageSize = '10', name, status, sortBy = 'id', order = 'asc' } = query
 
-            const limit = Number(pageSize)
-            const offset = (Number(page) - 1) * limit
+            const { page = '1', pageSize = '10', name, status, sortBy, order } = query
 
-            const where: LeadWhereParams = {}
-
-            if (name) where.name = { like: name, mode: 'insensitive' }
-            if (status) where.status = status
-
-            const leads = await this.leadsRepository.find({
-                where,
-                sortBy,
-                order,
-                limit,
-                offset,
+            const result = await this.leadsService.getAllLeadsPaginated({
+                page: +page,
+                pageSize: +pageSize,
+                ...(name !== undefined && { name }),
+                ...(status !== undefined && { status }),
+                ...(sortBy !== undefined && { sortBy }),
+                ...(order !== undefined && { order }),
             })
 
-            const total = await this.leadsRepository.count(where)
-            const totalPages = Math.ceil(total / limit)
-
-            res.json({
-                data: leads,
-                meta: { page: +page, pageSize: +pageSize, total, totalPages },
-            })
+            res.json(result)
         } catch (error) {
             next(error)
         }
@@ -50,11 +34,11 @@ export class LeadsController {
     create: Handler = async (req, res, next) => {
         try {
             const body = CreateLeadRequestSchema.parse(req.body)
-            const newLead = await this.leadsRepository.create({
+            const newLead = await this.leadsService.createLead({
                 name: body.name,
                 email: body.email,
                 ...(body.phone !== undefined && { phone: body.phone }),
-                status: body.status ?? 'NEW',
+                ...(body.status !== undefined && { status: body.status }),
             })
             res.status(201).json(newLead)
         } catch (error) {
