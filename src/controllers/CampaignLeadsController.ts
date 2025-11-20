@@ -5,15 +5,11 @@ import {
     GetCampaignLeadsRequestSchema,
     UpdateLeadStatusInCampaignRequestSchema,
 } from './schemas/CampaignsRequestSchemas.js'
-import { HttpError } from '../errors/HttpError.js'
-import type { CampaignsRepository } from '../repositories/CampaignsRepository.js'
-import type { LeadsRepository, LeadWhereParams } from '../repositories/LeadsRepository.js'
+import type { CampaignLeadsService } from '../services/CampaignLeadsService.js'
 
 export class CampaignLeadsController {
-    constructor(
-        private readonly campaignsRepository: CampaignsRepository,
-        private readonly leadsRepository: LeadsRepository
-    ) {}
+    constructor(private readonly campaignLeadsService: CampaignLeadsService) {}
+
     getLeads: Handler = async (req, res, next) => {
         try {
             const campaignId = Number(req.params.campaignId)
@@ -27,33 +23,17 @@ export class CampaignLeadsController {
                 order = 'asc',
             } = query
 
-            const limit = +pageSize
-            const offset = (+page - 1) * limit
-
-            const where: LeadWhereParams = { campaignId, campaignStatus: status }
-
-            if (name) where.name = { like: name, mode: 'insensitive' }
-
-            const leads = await this.leadsRepository.find({
-                where,
+            const result = await this.campaignLeadsService.getCampaignLeads({
+                campaignId,
+                page: +page,
+                pageSize: +pageSize,
+                ...(name !== undefined && { name }),
+                status,
                 sortBy,
                 order,
-                limit,
-                offset,
-                include: { groups: true, campaigns: true },
             })
 
-            const total = await this.leadsRepository.count(where)
-
-            res.json({
-                data: leads,
-                meta: {
-                    page: +page,
-                    pageSize: limit,
-                    total,
-                    totalPages: Math.ceil(total / limit),
-                },
-            })
+            res.json(result)
         } catch (error) {
             next(error)
         }
@@ -63,32 +43,9 @@ export class CampaignLeadsController {
             const { leadId, status = 'NEW' } = AddLeadToCampaignRequestSchema.parse(req.body)
             const campaignId = Number(req.params.campaignId)
 
-            const campaign = await this.campaignsRepository.findById(campaignId)
-            const lead = await this.leadsRepository.findById(leadId)
+            const result = await this.campaignLeadsService.addLeadToCampaign(campaignId, leadId, status)
 
-            if (!campaign) {
-                throw new HttpError(404, `Campaign with id ${campaignId} not found`)
-            }
-
-            if (!lead) {
-                throw new HttpError(404, `Lead with id ${leadId} not found`)
-            }
-
-            const existingAssociation = await this.campaignsRepository.findLeadCampaignAssociation(
-                campaignId,
-                leadId
-            )
-
-            if (existingAssociation) {
-                throw new HttpError(409, 'Lead is already associated with this campaign')
-            }
-            await this.campaignsRepository.addLead({
-                leadId,
-                campaignId,
-                status,
-            })
-
-            res.status(201).json({ message: 'Lead added to campaign successfully' })
+            res.status(201).json(result)
         } catch (error) {
             next(error)
         }
@@ -99,31 +56,12 @@ export class CampaignLeadsController {
             const campaignId = Number(req.params.campaignId)
             const leadId = Number(req.params.leadId)
 
-            const campaign = await this.campaignsRepository.findById(campaignId)
-            const lead = await this.leadsRepository.findById(leadId)
-
-            if (!campaign) {
-                throw new HttpError(404, `Campaign with id ${campaignId} not found`)
-            }
-
-            if (!lead) {
-                throw new HttpError(404, `Lead with id ${leadId} not found`)
-            }
-
-            const existingAssociation = await this.campaignsRepository.findLeadCampaignAssociation(
+            const updatedLeadCampaign = await this.campaignLeadsService.updateLeadStatusInCampaign(
                 campaignId,
-                leadId
+                leadId,
+                status
             )
 
-            if (!existingAssociation) {
-                throw new HttpError(404, 'Lead is not associated with this campaign')
-            }
-
-            const updatedLeadCampaign = await this.campaignsRepository.updateLeadStatus({
-                leadId,
-                campaignId,
-                status,
-            })
             res.status(200).json({ updatedLeadCampaign })
         } catch (error) {
             next(error)
@@ -135,25 +73,9 @@ export class CampaignLeadsController {
             const campaignId = Number(req.params.campaignId)
             const leadId = Number(req.params.leadId)
 
-            if (isNaN(campaignId) || isNaN(leadId)) {
-                throw new HttpError(400, 'Invalid campaign or lead.')
-            }
+            const result = await this.campaignLeadsService.removeLeadFromCampaign(campaignId, leadId)
 
-            const existingAssociation = await this.campaignsRepository.findLeadCampaignAssociation(
-                campaignId,
-                leadId
-            )
-
-            if (!existingAssociation) {
-                throw new HttpError(404, 'Lead is not associated with this campaign')
-            }
-
-            const deletedLead = await this.campaignsRepository.removeLead(campaignId, leadId)
-
-            res.json({
-                message: 'Lead removed from campaign successfully',
-                deletedLead,
-            })
+            res.json(result)
         } catch (error) {
             next(error)
         }
