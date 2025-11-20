@@ -4,7 +4,6 @@ import {
     GetLeadsRequestSchema,
     UpdateLeadRequestSchema,
 } from './schemas/LeadsRequestSchemas.js'
-import { HttpError } from '../errors/HttpError.js'
 import type { LeadsService } from '../services/LeadsService.js'
 
 export class LeadsController {
@@ -47,10 +46,7 @@ export class LeadsController {
     }
     show: Handler = async (req, res, next) => {
         try {
-            const lead = await this.leadsRepository.findById(Number(req.params.id))
-            if (!lead) {
-                throw new HttpError(404, 'Lead not found')
-            }
+            const lead = await this.leadsService.getLeadById(Number(req.params.id))
             res.json(lead)
         } catch (error) {
             next(error)
@@ -60,27 +56,6 @@ export class LeadsController {
         try {
             const body = UpdateLeadRequestSchema.parse(req.body)
             const id = Number(req.params.id)
-            const existingLead = await this.leadsRepository.findById(id)
-
-            if (!existingLead) {
-                throw new HttpError(404, 'Lead not found')
-            }
-
-            if (existingLead.status === 'NEW' && body.status !== undefined && body.status !== 'CONTACTED') {
-                throw new HttpError(
-                    400,
-                    'A new lead must be contacted before changing its status to other value'
-                )
-            }
-
-            if (body.status && body.status === 'ARCHIVED') {
-                const now = new Date()
-                const diffTime = Math.abs(now.getTime() - existingLead.updatedAt.getTime())
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) //converted to  seconds, then minutes, then hours and finally days
-                if (diffDays < 180) {
-                    throw new HttpError(400, 'A lead can only be archived after 6 months of its last update')
-                }
-            }
 
             const leadData = {
                 ...(body.name !== undefined && { name: body.name }),
@@ -89,10 +64,8 @@ export class LeadsController {
                 ...(body.status !== undefined && { status: body.status }),
             }
 
-            const updatedLead = await this.leadsRepository.updateById(id, leadData)
-            if (!updatedLead) {
-                throw new HttpError(404, 'Lead not found')
-            }
+            const updatedLead = await this.leadsService.updateLead(id, leadData)
+
             res.json(updatedLead)
         } catch (error) {
             next(error)
@@ -101,14 +74,8 @@ export class LeadsController {
     delete: Handler = async (req, res, next) => {
         try {
             const id = Number(req.params.id)
-            const existingLead = await this.leadsRepository.findById(id)
-            if (!existingLead) {
-                throw new HttpError(404, 'Lead not found')
-            }
-            const deletedLead = await this.leadsRepository.deleteById(id)
-            if (!deletedLead) {
-                throw new HttpError(404, 'Lead not found')
-            }
+
+            const deletedLead = await this.leadsService.deleteLead(id)
             res.json({ deletedLead })
         } catch (error) {
             next(error)
