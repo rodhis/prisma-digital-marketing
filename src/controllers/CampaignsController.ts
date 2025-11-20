@@ -4,14 +4,14 @@ import {
     CreateCampaignRequestSchema,
     UpdateCampaignRequestSchema,
 } from './schemas/CampaignsRequestSchemas.js'
-import { HttpError } from '../errors/HttpError.js'
-import type { CampaignsRepository, CreateCampaignAttributes } from '../repositories/CampaignsRepository.js'
+import type { CampaignsService } from '../services/CampaignsService.js'
+import type { CreateCampaignAttributes } from '../repositories/CampaignsRepository.js'
 
 export class CampaignsController {
-    constructor(private readonly campaignRepository: CampaignsRepository) {}
+    constructor(private readonly campaignsService: CampaignsService) {}
     index: Handler = async (req, res, next) => {
         try {
-            const campaigns = await this.campaignRepository.find()
+            const campaigns = await this.campaignsService.getAllCampaigns()
             res.json(campaigns)
         } catch (error) {
             next(error)
@@ -21,7 +21,7 @@ export class CampaignsController {
     create: Handler = async (req, res, next) => {
         try {
             const body = CreateCampaignRequestSchema.parse(req.body)
-            const newCampaign = await this.campaignRepository.create({
+            const newCampaign = await this.campaignsService.createCampaign({
                 name: body.name,
                 description: body.description,
                 startDate: body.startDate,
@@ -34,10 +34,7 @@ export class CampaignsController {
     }
     show: Handler = async (req, res, next) => {
         try {
-            const campaign = await this.campaignRepository.findById(Number(req.params.id))
-            if (!campaign) {
-                throw new HttpError(404, 'Campaign not found')
-            }
+            const campaign = await this.campaignsService.getCampaignById(Number(req.params.id))
             res.json(campaign)
         } catch (error) {
             next(error)
@@ -63,9 +60,7 @@ export class CampaignsController {
                 campaignData.endDate = body.endDate
             }
 
-            const updatedCampaign = await this.campaignRepository.updateById(id, campaignData)
-
-            if (!updatedCampaign) throw new HttpError(404, 'Campaign not found')
+            const updatedCampaign = await this.campaignsService.updateCampaign(id, campaignData)
 
             res.json(updatedCampaign)
         } catch (error) {
@@ -75,9 +70,7 @@ export class CampaignsController {
     delete: Handler = async (req, res, next) => {
         try {
             const id = Number(req.params.id)
-            const deletedCampaign = await this.campaignRepository.deleteById(id)
-
-            if (!deletedCampaign) throw new HttpError(404, 'Campaign not found')
+            const deletedCampaign = await this.campaignsService.deleteCampaign(id)
 
             res.json(deletedCampaign)
         } catch (error) {
