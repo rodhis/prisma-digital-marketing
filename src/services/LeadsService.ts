@@ -37,7 +37,7 @@ export class LeadsService {
         })
 
         const total = await this.leadsRepository.count(where)
-        const totalPages = Math.ceil(total / limit)
+        const totalPages = Math.ceil(total / pageSize)
 
         return {
             leads,

@@ -7,6 +7,7 @@ import { PrismaLeadsRepository } from './repositories/prisma/PrismaLeadsReposito
 import { PrismaGroupsRepository } from './repositories/prisma/PrismaGroupsRepository.js'
 import { PrismaCampaignsRepository } from './repositories/prisma/PrismaCampaignsRepository.js'
 import { LeadsService } from './services/LeadsService.js'
+import { GroupsService } from './services/GroupsService.js'
 
 // repositories
 const leadsRepository = new PrismaLeadsRepository()
@@ -15,10 +16,11 @@ const campaignsRepository = new PrismaCampaignsRepository()
 
 //services
 const leadsService = new LeadsService(leadsRepository)
+const groupsService = new GroupsService(groupsRepository)
 
 // controllers instances
 export const leadsController = new LeadsController(leadsService)
-export const groupsController = new GroupsController(groupsRepository)
+export const groupsController = new GroupsController(groupsService)
 export const groupsLeadsController = new GroupLeadsController(groupsRepository, leadsRepository)
 export const campaignsController = new CampaignsController(campaignsRepository)
 export const campaignLeadsController = new CampaignLeadsController(campaignsRepository, leadsRepository)
